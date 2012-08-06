@@ -50,8 +50,8 @@
         <IsVisibleTab Value="True"/>
         <EditorIndex Value="0"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="248"/>
-        <CursorPos X="19" Y="278"/>
+        <TopLine Value="410"/>
+        <CursorPos X="95" Y="432"/>
         <UsageCount Value="30"/>
         <Loaded Value="True"/>
       </Unit0>
@@ -85,7 +85,20 @@
         <Loaded Value="True"/>
       </Unit3>
     </Units>
-    <JumpHistory Count="0" HistoryIndex="-1"/>
+    <JumpHistory Count="3" HistoryIndex="2">
+      <Position1>
+        <Filename Value="bothelper.pas"/>
+        <Caret Line="323" Column="5" TopLine="478"/>
+      </Position1>
+      <Position2>
+        <Filename Value="bothelper.pas"/>
+        <Caret Line="294" Column="52" TopLine="276"/>
+      </Position2>
+      <Position3>
+        <Filename Value="bothelper.pas"/>
+        <Caret Line="329" Column="44" TopLine="311"/>
+      </Position3>
+    </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>
     <Version Value="9"/>

@@ -207,6 +207,14 @@ begin
  if not (str = '') then result:= str else result:='Error';
 end;
 
+function GetWndHandleByPid(pid: integer):integer; callconv
+var
+  wnd: integer;
+ begin
+  GetWindowThreadProcessId(wnd,@pid);
+  result:=wnd;
+ end;
+
 procedure MinimizeWindow(wnd: integer); callconv
 begin
  ShowWindow(wnd,SW_SHOWMINIMIZED);
@@ -232,7 +240,7 @@ begin
   SetWindowPos(wnd,HWND_TOP,newpos.x,newpos.y, 0, 0,SWP_NOSIZE);
 end;
 
-procedure ClickToWindow(Wnd: integer;Button: byte;ClickPoint: TPoint);
+procedure ClickToWindow(Wnd: integer;Button: byte;ClickPoint: TPoint); callconv
 var
   r: TRect;
 begin
@@ -259,7 +267,7 @@ begin
      end;
   end;
 
-procedure SendKeyToWindow(Wnd: integer; Key: byte; PressTime: integer);
+procedure SendKeyToWindow(Wnd: integer; Key: byte; PressTime: integer); callconv
 begin
  SetForegroundWindow(Wnd);
  Keybd_event(Key-32,0,0,0);
@@ -267,7 +275,7 @@ begin
  Keybd_event(Key-32,0,KeyeventF_KeyUp,0);
 end;
 
-procedure SendTextToWindow(Wnd: integer; Text: string; PressTime: integer);
+procedure SendTextToWindow(Wnd: integer; Text: string; PressTime: integer); callconv
 var
   i: integer;
 begin
@@ -281,8 +289,50 @@ begin
 end;
 
 {end window control}
+{Application control}
+function RunClient(PathToClient:string):boolean; callconv
+var
+  StartInfo : TStartupInfo;
+  ProcInfo : TProcessInformation;
+  CreateOK : Boolean;
+begin
+  FillChar(StartInfo,SizeOf(TStartupInfo),#0);
+  FillChar(ProcInfo,SizeOf(TProcessInformation),#0);
+  StartInfo.cb := SizeOf(TStartupInfo);
+  CreateOK := CreateProcess(nil, PChar(PathToClient), nil, nil,False,
+                            CREATE_NEW_PROCESS_GROUP+NORMAL_PRIORITY_CLASS,
+                            nil, nil, StartInfo, ProcInfo);
+   if CreateOK then
+     begin
+       Result:=true;
+      end
+         else
+     begin
+      Result:=false;
+     end;
+  CloseHandle(ProcInfo.hProcess);
+  CloseHandle(ProcInfo.hThread);
+end;
 
-Function GetWindowName(WindowTitle: string):integer; callconv
+procedure KillClient(pid: integer); callconv
+var
+ exitcode:UINT;
+ x:THandle;
+begin
+ x:=Openprocess(PROCESS_TERMINATE,false,PID);
+ if x <> 0 then begin
+   try
+     GetExitCodeProcess(x,ExitCode);
+     TerminateProcess(x,Exitcode);
+   finally
+     CloseHandle(x);
+   end;
+ end;
+end;
+
+{end}
+
+Function GetWindowHandle(WindowTitle: string):integer; callconv
 begin
   result:=InternalGetWindowName(WindowTitle);
 end;
@@ -345,7 +395,7 @@ end;
 
 function GetFunctionCount(): Integer; callconv export;
 begin
-  Result := 18;
+  Result := 21;
 end;
 
 function GetFunctionInfo(x: Integer; var ProcAddr: Pointer; var ProcDef: PChar): Integer; callconv export;
@@ -353,8 +403,8 @@ begin
   case x of
     0:
       begin
-        ProcAddr := @GetWindowName;
-        StrPCopy(ProcDef, 'Function GetWindowName(WindowTitle: string):integer;');
+        ProcAddr := @GetWindowHandle;
+        StrPCopy(ProcDef, 'Function GetWindowHandle(WindowTitle: string):integer;');
       end;
     1:
       begin
@@ -379,7 +429,7 @@ begin
      5:
       begin
         ProcAddr := @ReadFromMemoryFromPID;
-        StrPCopy(ProcDef, 'function ReadFromMemoryFromPID (PID,Address,Offset : integer): integer;');
+        StrPCopy(ProcDef, 'function ReadMemoryFromPID (PID,Address,Offset : integer): integer;');
       end;
      6:
       begin
@@ -440,6 +490,21 @@ begin
       begin
         ProcAddr := @SendTextToWindow;
         StrPCopy(ProcDef, 'procedure SendTextToWindow(Wnd: integer; Text: string; PressTime: integer);');
+      end;
+      18:
+      begin
+        ProcAddr := @RunClient;
+        StrPCopy(ProcDef, 'function RunClient(PathToClient:string):boolean;');
+      end;
+      19:
+      begin
+        ProcAddr := @KillClient;
+        StrPCopy(ProcDef, 'procedure KillClient(pid: integer);');
+      end;
+       20:
+      begin
+        ProcAddr := @GetWndHandleByPid;
+        StrPCopy(ProcDef, 'function GetWndHandleByPid(pid: integer):integer;');
       end;
     else
       x := -1;
