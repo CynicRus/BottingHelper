@@ -8,12 +8,44 @@ library bothelper;
 }
 
 uses
-  Classes, SysUtils,Dialogs, Windows,jwaTlHelp32, interfaces
+  Classes, SysUtils,Dialogs, Windows,jwaTlHelp32,math, interfaces
   { you can add units after this };
  var
   OldMemoryManager: TMemoryManager;
   memisset: Boolean = False;
-  type TWindow = integer;
+  wcaption: string;
+  hndle: integer;
+  type TCustomClient = record
+    CMSX1,CMSY1,CMSX2,CMSY2,CMSCX1,CMSCY1: integer;
+    end;
+  //WindowEnumerator
+function EnumProc (Wd: HWnd; Param: LongInt): Bool; stdcall;
+var
+//промежуточная переменная
+b:Dword;
+//строка
+str:array[0..199] of Char;
+Begin
+//Получение PID по хэндлу окна
+   GetWindowThreadProcessId(Wd,@b);
+   //Сравнение полученного значиния с заданным
+   if (b=Param) then
+   begin
+   //запоминаем хэндел
+   hndle:=Wd;
+   //Имя окна (хэндл, строка приёмник, длинна строки)
+   GetWindowText(Wd,str,200);
+   //Вывод имени окна
+   wcaption:=  str;
+   //Возвращаем false
+   EnumProc := false;
+     end
+     else
+     //Возвращаем True
+   EnumProc := True;
+end;
+
+
  //internal get process id
  function InternalGetProcessID(ProcName:String):integer;
      var
@@ -198,22 +230,16 @@ Function ReadStringFromPid (Pid,Address,Offset : integer): string; callconv
     end;
 {Window control functions}
 Function GetWindowCaptionFromPid(Pid: integer):string; callconv
-var
-  wd: hwnd;
-  str: PChar;
-begin
- GetWindowThreadProcessId(Wd,@Pid);
- GetWindowText(Wd,str,200);
- if not (str = '') then result:= str else result:='Error';
-end;
+ begin
+ repeat until (EnumWindows(@EnumProc,Pid) = false);
+ result:=wcaption;
+ end;
 
 function GetWndHandleByPid(pid: integer):integer; callconv
-var
-  wnd: integer;
- begin
-  GetWindowThreadProcessId(wnd,@pid);
-  result:=wnd;
- end;
+begin
+repeat until (EnumWindows(@EnumProc,Pid) = false);
+result:=hndle;
+end;
 
 procedure MinimizeWindow(wnd: integer); callconv
 begin
@@ -240,29 +266,31 @@ begin
   SetWindowPos(wnd,HWND_TOP,newpos.x,newpos.y, 0, 0,SWP_NOSIZE);
 end;
 
-procedure ClickToWindow(Wnd: integer;Button: byte;ClickPoint: TPoint); callconv
+procedure ClickToWindow(Wnd: integer;Button: byte;x,y: integer); callconv
 var
-  r: TRect;
+  r: Classes.TRECT;
 begin
-  GetWindowRect(Wnd,r);
+  //RestoreWindow(Wnd);
   SetForegroundWindow(Wnd);
-  SetCursorPos(r.Left+ClickPoint.x,r.Top+ClickPoint.y);
+  ShowWindow(wnd,SW_Maximize);
+  GetWindowRect(Wnd,r);
+  SetCursorPos(r.Left+x,r.Top+y);
   case button of
       //one left click
      0: begin
-          mouse_event(MouseeventF_LeftDown,r.Left+ClickPoint.x,r.Top+r.Top+ClickPoint.y,0,0);
-          mouse_event(MouseeventF_LeftUp,r.Left+ClickPoint.x,r.Top+r.Top+ClickPoint.y,0,0);
+          mouse_event(MouseeventF_LeftDown,r.Left+x,r.Top+r.Top+y,0,0);
+          mouse_event(MouseeventF_LeftUp,r.Left+x,r.Top+r.Top+y,0,0);
         end;
      1: begin
-          mouse_event(MouseeventF_RightDown,r.Left+ClickPoint.x,r.Top+r.Top+ClickPoint.y,0,0);
-          mouse_event(MouseeventF_RightUp,r.Left+ClickPoint.x,r.Top+r.Top+ClickPoint.y,0,0);
+          mouse_event(MouseeventF_RightDown,r.Left+x,r.Top+r.Top+y,0,0);
+          mouse_event(MouseeventF_RightUp,r.Left+x,r.Top+r.Top+y,0,0);
         end;
      2: begin
-          mouse_event(MouseeventF_LeftDown,r.Left+ClickPoint.x,r.Top+r.Top+ClickPoint.y,0,0);
-          mouse_event(MouseeventF_LeftUp,r.Left+ClickPoint.x,r.Top+r.Top+ClickPoint.y,0,0);
+          mouse_event(MouseeventF_LeftDown,r.Left+x,r.Top+r.Top+y,0,0);
+          mouse_event(MouseeventF_LeftUp,r.Left+x,r.Top+r.Top+y,0,0);
           GetDoubleClickTime;
-          mouse_event(MouseeventF_LeftDown,r.Left+ClickPoint.x,r.Top+r.Top+ClickPoint.y,0,0);
-          mouse_event(MouseeventF_LeftUp,r.Left+ClickPoint.x,r.Top+r.Top+ClickPoint.y,0,0);
+          mouse_event(MouseeventF_LeftDown,r.Left+x,r.Top+r.Top+y,0,0);
+          mouse_event(MouseeventF_LeftUp,r.Left+x,r.Top+r.Top+y,0,0);
         end;
      end;
   end;
@@ -331,6 +359,23 @@ begin
 end;
 
 {end}
+{Window params}
+Procedure GetClientInfoFromWnd(Wnd: integer;var client: TCustomClient); callconv
+var
+ r: Classes.TRect;
+ pt: TPoint;
+begin
+ GetWindowRect(Wnd,r);
+ Client.CMSX1:=r.left;
+ Client.CMSY1:=r.top;
+ Client.CMSX2:= r.Right - r.Left;
+ Client.CMSY2:=r.Bottom - r.Top;
+  pt:= Classes.Point(((r.Left + r.Right) div 2), ((r.Top + r.Bottom) div 2));
+ Client.CMSCX1:=pt.x;
+ Client.CMSCY1:=pt.y;
+end;
+
+{}
 
 Function GetWindowHandle(WindowTitle: string):integer; callconv
 begin
@@ -384,8 +429,10 @@ function GetTypeInfo(x: Integer; var sType, sTypeDef: PChar): integer; callconv 
 begin
   case x of
     0: begin
-        StrPCopy(sType, 'TWindow');
-        StrPCopy(sTypeDef, 'integer;');
+        StrPCopy(sType, 'TCustomClient');
+        StrPCopy(sTypeDef, 'record'+#32+
+   ' CMSX1,CMSY1,CMSX2,CMSY2,CMSCX1,CMSCY1: integer;'+#32+
+   ' end;');
        end;
     else
       x := -1;
@@ -395,7 +442,7 @@ end;
 
 function GetFunctionCount(): Integer; callconv export;
 begin
-  Result := 21;
+  Result := 22;
 end;
 
 function GetFunctionInfo(x: Integer; var ProcAddr: Pointer; var ProcDef: PChar): Integer; callconv export;
@@ -479,7 +526,7 @@ begin
       15:
       begin
         ProcAddr := @ClickToWindow;
-        StrPCopy(ProcDef, 'procedure ClickToWindow(Wnd: integer;Button: byte;ClickPoint: TPoint);');
+        StrPCopy(ProcDef, 'procedure ClickToWindow(Wnd: integer;Button: byte;x,y: integer);');
       end;
       16:
       begin
@@ -505,6 +552,11 @@ begin
       begin
         ProcAddr := @GetWndHandleByPid;
         StrPCopy(ProcDef, 'function GetWndHandleByPid(pid: integer):integer;');
+      end;
+       21:
+      begin
+        ProcAddr := @GetClientInfoFromWnd;
+        StrPCopy(ProcDef, 'Procedure GetClientInfoFromWnd(Wnd: integer;var client: TCustomClient);');
       end;
     else
       x := -1;

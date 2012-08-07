@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
 <CONFIG>
-  <Compiler Value="C:\FPC\2.4.4\bin\i386-win32\fpc.exe" Date="1050113080"/>
-  <Params Value=" -MObjFPC -Scghi -O3 -gl -Xg -Xs -XX -vewnhi -l -FiE:\Coding\BottingHelper\lib\i386-win32 -FuC:\lazarus\lcl\units\i386-win32 -FuC:\lazarus\lcl\units\i386-win32\win32 -FuC:\lazarus\packager\units\i386-win32 -FuE:\Coding\BottingHelper\ -Fu. -FUE:\Coding\BottingHelper\lib\i386-win32\ -obothelper.dll -dLCL -dLCLwin32 bothelper.pas"/>
+  <Compiler Value="C:\lazarus\fpc\2.6.0\bin\i386-win32\fpc.exe" Date="1080972742"/>
+  <Params Value=" -MObjFPC -Scghi -O3 -gl -Xg -Xs -XX -vewnhi -l -FiC:\Users\Cynic\Documents\GitHub\BottingHelper\lib\i386-win32 -FuC:\lazarus\lcl\units\i386-win32 -FuC:\lazarus\lcl\units\i386-win32\win32 -FuC:\lazarus\packager\units\i386-win32 -FuC:\Users\Cynic\Documents\GitHub\BottingHelper\ -Fu. -FUC:\Users\Cynic\Documents\GitHub\BottingHelper\lib\i386-win32\ -obothelper.dll -dLCL -dLCLwin32 bothelper.pas"/>
 </CONFIG>
