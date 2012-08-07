@@ -18,6 +18,11 @@ uses
   type TCustomClient = record
     CMSX1,CMSY1,CMSX2,CMSY2,CMSCX1,CMSCY1: integer;
     end;
+  type TGame = record
+    exepath: string;
+    pid, wndhandle: integer;
+    end;
+  type TKeysArray = array of byte;
   //WindowEnumerator
 function EnumProc (Wd: HWnd; Param: LongInt): Bool; stdcall;
 var
@@ -295,12 +300,25 @@ begin
      end;
   end;
 
+Procedure DragWithMouse(Wnd,FromX,FromY,ToX,ToY: integer); callconv
+var
+  r: Classes.TRECT;
+begin
+  SetForegroundWindow(Wnd);
+  ShowWindow(wnd,SW_Maximize);
+  GetWindowRect(Wnd,r);
+  SetCursorPos(r.Left+FromX,r.Top+FromY);
+  mouse_event(MouseeventF_LeftDown,r.Left+FromX,r.Top+r.Top+FromY,0,0);
+  SetCursorPos(r.Left+ToX,r.Top+ToY);
+  mouse_event(MouseeventF_LeftUp,r.Left+ToX,r.Top+r.Top+ToY,0,0);
+end;
+
 procedure SendKeyToWindow(Wnd: integer; Key: byte; PressTime: integer); callconv
 begin
  SetForegroundWindow(Wnd);
- Keybd_event(Key-32,0,0,0);
+ Keybd_event(Key,0,0,0);
  Sleep(PressTime);
- Keybd_event(Key-32,0,KeyeventF_KeyUp,0);
+ Keybd_event(Key,0,KeyeventF_KeyUp,0);
 end;
 
 procedure SendTextToWindow(Wnd: integer; Text: string; PressTime: integer); callconv
@@ -315,6 +333,19 @@ begin
    Keybd_event(Ord(Text[i+1])-32,0,KeyeventF_KeyUp,0);
  end;
 end;
+
+procedure SendMultyKeys(Wnd: integer;const Keys: TKeysArray); callconv
+var
+  i,j: integer;
+ begin
+  SetForegroundWindow(Wnd);
+  for I:=0 to Length(Keys)-1 do begin
+   Keybd_event(Keys[i],0,0,0);
+  end;
+  for j:=0 to Length(Keys)-1 do begin
+   Keybd_event(Keys[i],0,KeyeventF_KeyUp,0);
+  end;
+ end;
 
 {end window control}
 {Application control}
@@ -357,8 +388,8 @@ begin
    end;
  end;
 end;
-
 {end}
+
 {Window params}
 Procedure GetClientInfoFromWnd(Wnd: integer;var client: TCustomClient); callconv
 var
@@ -422,7 +453,7 @@ end;
 
 function GetTypeCount(): Integer; callconv export;
 begin
-  Result := 1;
+  Result := 3;
 end;
 
 function GetTypeInfo(x: Integer; var sType, sTypeDef: PChar): integer; callconv export;
@@ -434,6 +465,17 @@ begin
    ' CMSX1,CMSY1,CMSX2,CMSY2,CMSCX1,CMSCY1: integer;'+#32+
    ' end;');
        end;
+    1: begin
+        StrPCopy(sType, 'TGame');
+        StrPCopy(sTypeDef, 'record'+#32+
+    'exepath: string;' +#32 +
+    'pid, wndhandle: integer;'+#32 +
+     'end;')
+        end;
+    2: begin
+        StrPCopy(sType, 'TKeysArray');
+        StrPCopy(sTypeDef, 'array of byte;');
+       end;
     else
       x := -1;
   end;
@@ -442,7 +484,7 @@ end;
 
 function GetFunctionCount(): Integer; callconv export;
 begin
-  Result := 22;
+  Result := 24;
 end;
 
 function GetFunctionInfo(x: Integer; var ProcAddr: Pointer; var ProcDef: PChar): Integer; callconv export;
@@ -557,6 +599,16 @@ begin
       begin
         ProcAddr := @GetClientInfoFromWnd;
         StrPCopy(ProcDef, 'Procedure GetClientInfoFromWnd(Wnd: integer;var client: TCustomClient);');
+      end;
+       22:
+      begin
+        ProcAddr := @SendMultyKeys;
+        StrPCopy(ProcDef, 'procedure SendMultyKeys(Wnd: integer; const Keys: TKeysArray);');
+      end;
+        23:
+      begin
+        ProcAddr := @DragWithMouse;
+        StrPCopy(ProcDef, 'Procedure DragWithMouse(Wnd,FromX,FromY,ToX,ToY: integer);');
       end;
     else
       x := -1;
